@@ -2,20 +2,14 @@
 import { Fluence } from '@fluencelabs/fluence';
 import sha256 from 'crypto-js/sha256'
 import { useEffect, useState } from 'react'
-import Modal from 'react-modal'
+// import Modal from 'react-modal'
 import { krasnodar } from '@fluencelabs/fluence-network-environment';
 import { get_cids_from_table, get_content_from_cid, generate_new_keypair } from '../../_aqua/fdb'
-
-interface FdbDht {
-  cid: string,
-  key: string,
-  public_key: string
-}
-
-interface KeyPair {
-  pk: string,
-  sk: string
-}
+import {addDataModalStyles, modalStyles} from "../../styles/index";
+import {FdbDht, KeyPair, DatasetForm} from "../../interface/index";
+import {CollectionModal} from "../Explorer/Modals/collectionModal";
+import {AddDatasetModal} from "../Explorer/Modals/addDatasetModel";
+import {CidModal} from "../Explorer/Modals/cidModal";
 
 const MainExplorer = () => {
   const [isAddOpen, setAddDataOpen] = useState(false);
@@ -24,34 +18,6 @@ const MainExplorer = () => {
   const [data, setData] = useState<FdbDht[]>([])
   const [content, setContent] = useState<string>('')
   const [selectedCid, setSelectedCid] = useState('')
-  const [keypair, setKeypair] = useState<KeyPair>()
-
-  const addDataModalStyles = {
-    content : {
-      width: '50%',
-      height: '75%',
-      top: '50%',
-      left: '50%',
-      right: 'auto',
-      bottom: 'auto',
-      marginRight: '-50%',
-      transform: 'translate(-50%, -50%)'
-    }
-  };
-
-  const modalStyles = {
-    content : {
-      width: '50%',
-      height: '45%',
-      top: '50%',
-      left: '50%',
-      right: 'auto',
-      bottom: 'auto',
-      marginRight: '-50%',
-      transform: 'translate(-50%, -50%)'
-    }
-  };
-
   const [search, setSearch] = useState({
     address: '',
     id: ''
@@ -64,14 +30,10 @@ const MainExplorer = () => {
       return;
     }
 
-    const result = sha256(JSON.stringify({
-      token_address: search.address.toLowerCase(),
-      token_id: parseInt(search.id),
-      chainId: 56,
-      nonce: 0
-    }))
+    const result = sha256(search.address.toLowerCase()+search.id+56+0)
 
     const r = await get_cids_from_table(String(result))
+
     setData((r[0] as any).datas as FdbDht[])
   }
 
@@ -92,11 +54,6 @@ const MainExplorer = () => {
   const onCidOk = async () => {
     setCIDOpen(false)
     setContent('')
-  }
-
-  const onGenerateKey = async() => {
-    const keypair = await generate_new_keypair()
-    setKeypair(keypair as KeyPair)
   }
 
   useEffect(() => {
@@ -202,165 +159,13 @@ const MainExplorer = () => {
       </div>
 
       {/* --------------- ADD DATABASE MODAL ------------  */}
-      <Modal
-        isOpen={isAddOpen}
-        onRequestClose={() => setAddDataOpen(false)}
-        ariaHideApp={false}
-        style={addDataModalStyles}
-      >
-        <div className='flex justify-between my-3'>
-          <h1>Add Database</h1>
-          <button onClick={() => setAddDataOpen(false)}>X</button>
-        </div>
-        <form>
-          <div className=" mb-2 text-left pr-4">
-            <label
-              htmlFor="text"
-              className="block text-sm font-semibold text-gray-800"
-            >
-              Key
-            </label>
-            <input
-              type="text"
-              className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40"
-              placeholder="Key..."
-            />
-          </div>
-          <div className="mb-2 text-left pr-4">
-            <label
-              htmlFor="text"
-              className="block text-sm font-semibold text-gray-800"
-            >
-              Public Key
-            </label>
-            <input
-              type="text"
-              className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40"
-              placeholder="Enter public key"
-            />
-          </div>
-          <div className="mb-2 text-left pr-4">
-            <label
-              htmlFor="text"
-              className="block text-sm font-semibold text-gray-800"
-            >
-              Message
-            </label>
-            <textarea
-              className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40"
-              placeholder="Enter message ..."
-            />
-          </div>
-          <div className="mb-2 text-left pr-4">
-            <label
-              htmlFor="text"
-              className="block text-sm font-semibold text-gray-800"
-            >
-              Signature
-            </label>
-            <textarea
-              className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40"
-              placeholder="Signature"
-            />
-          </div>
-          <div className="mt-8 flex justify-center ">
-            <button
-              type="submit"
-              className="bg-green-500 py-2 px-4 rounded-lg text-white font-semibold hover:bg-green-800 transition-colors"
-            >
-              Add
-            </button>
-          </div>
-        </form>
-      </Modal>
-
+      {isAddOpen ? (<AddDatasetModal setAddDataOpen={setAddDataOpen} />) : null}
 
       {/* --------------- NEW COLLECTION MODAL ------------  */}
-      <Modal
-        isOpen={isNewOpen}
-        onRequestClose={() => setNewColOpen(false)}
-        ariaHideApp={false}
-        style={modalStyles}
-      >
-        <div className='flex justify-between my-3'>
-          <h1>New Collection</h1>
-          <button onClick={() => setNewColOpen(false)}>X</button>
-        </div>
-        <form>
-          <div className="mb-2 text-left pr-4">
-            <label
-              htmlFor="text"
-              className="block text-sm font-semibold text-gray-800"
-            >
-              Public Key
-            </label>
-            <input
-              type="text"
-              className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40"
-              value={keypair?.pk}
-            />
-          </div>
-          <div className="mb-2 text-left pr-4">
-            <label
-              htmlFor="text"
-              className="block text-sm font-semibold text-gray-800"
-            >
-              Secret Key
-            </label>
-            <input
-              type="text"
-              className="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40"
-              value={keypair?.sk}
-            />
-          </div>
-          <div className="mt-8 flex justify-center ">
-            <button
-              type="button"
-              className="bg-green-500 py-2 px-4 rounded-lg text-white font-semibold hover:bg-green-800 transition-colors"
-              onClick={onGenerateKey}
-            >
-              Generate
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {isNewOpen ? (<CollectionModal setNewColOpen={setNewColOpen} />) : null}
 
       {/* --------------- CID MODAL ------------  */}
-      <Modal
-        isOpen={isCIDOpen}
-        onRequestClose={() => setCIDOpen(false)}
-        ariaHideApp={false}
-        style={modalStyles}
-      >
-        <div className='flex justify-between my-3'>
-          <h1>CID</h1>
-          <button onClick={() => setCIDOpen(false)}>X</button>
-        </div>
-        <form>
-          <div className="mb-2 text-left pr-4">
-            <label
-              htmlFor="text"
-              className="block text-sm font-semibold text-gray-800"
-            >
-              CID: {selectedCid}
-            </label>
-            <textarea
-              className="h-36 block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40"
-              placeholder="CID"
-              value={content}
-            />
-          </div>
-          <div className="mt-8 flex justify-center ">
-            <button
-              type="button"
-              className="bg-green-500 py-2 px-4 rounded-lg text-white font-semibold hover:bg-green-800 transition-colors"
-              onClick={onCidOk}
-            >
-              Ok
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {isCIDOpen ? (<CidModal selectedCid={selectedCid} content={content} setCIDOpen={setCIDOpen} setContent={setContent}/>) : null}
 
       {/* {cidModalVisible && <Popup />} */}
     </>
